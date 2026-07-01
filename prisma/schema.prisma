@@ -1,0 +1,101 @@
+// Prisma schema for town-store-os 第一阶段 MVP
+// 详细字段说明见 /Users/fulian/code/town-store-os/docs/data-model.md
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============ 第一阶段核心表 ============
+
+model Product {
+  id                String    @id @default(cuid())
+  barcode           String?   @unique
+  name              String
+  category          String
+  brand             String?
+  spec              String?
+  costPrice         Decimal   @db.Decimal(10, 2)
+  salePrice         Decimal   @db.Decimal(10, 2)
+  stock             Int       @default(0)
+  lowStockThreshold Int       @default(5)
+  shelfLocation     String?
+  expiryDate        DateTime? @db.Date
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  saleItems      SaleItem[]
+  stockMovements StockMovement[]
+
+  @@index([name])
+  @@index([category])
+  @@index([brand])
+  @@index([stock])
+  @@index([expiryDate])
+  @@index([lowStockThreshold])
+}
+
+model Sale {
+  id          String   @id @default(cuid())
+  totalAmount Decimal  @db.Decimal(10, 2)
+  totalCost   Decimal  @db.Decimal(10, 2)
+  totalProfit Decimal  @db.Decimal(10, 2)
+  itemCount   Int
+  soldAt      DateTime @default(now())
+  note        String?
+  createdAt   DateTime @default(now())
+
+  items SaleItem[]
+
+  @@index([soldAt])
+}
+
+model SaleItem {
+  id        String   @id @default(cuid())
+  saleId    String
+  productId String
+  quantity  Int
+  salePrice Decimal  @db.Decimal(10, 2)
+  costPrice Decimal  @db.Decimal(10, 2)
+  subtotal  Decimal  @db.Decimal(10, 2)
+  profit    Decimal  @db.Decimal(10, 2)
+  createdAt DateTime @default(now())
+
+  sale    Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([saleId])
+  @@index([productId])
+}
+
+model StockMovement {
+  id            String            @id @default(cuid())
+  productId     String
+  type          StockMovementType
+  quantity      Int
+  beforeStock   Int
+  afterStock    Int
+  referenceType String?
+  referenceId   String?
+  note          String?
+  createdAt     DateTime          @default(now())
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@index([type])
+  @@index([createdAt])
+  @@index([referenceType, referenceId])
+}
+
+enum StockMovementType {
+  INBOUND
+  SALE_OUT
+  ADJUSTMENT
+  RETURN
+  LOSS
+}

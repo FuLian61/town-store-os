@@ -234,6 +234,7 @@ curl -s http://localhost:3000/api/sales
 - [x] Task 8（经营看板）—— 见上
 - [x] Task 9（全局导航 + 首页）—— 见上
 - [x] Task 10（seed 脚本）—— 见上
+- [x] Task 11（UI 视觉重塑 + 共享组件 + active 导航 + 暗色切换 + 下架入口）—— 见上
 - [x] CI（GitHub Actions + smoke.sh）—— 见下
 - [ ] 浏览器端验证（UI 截图）—— 验收阶段补
 - [ ] 集成测试 / 单元测试 —— MVP 验收后补
@@ -284,6 +285,108 @@ BASE_URL=http://localhost:4000 ./scripts/smoke.sh
 
 - TypeScript 5.0.2 低于 Next.js 推荐的 5.1.0，会输出 warning 但不阻断
 - seed 数据与历史测试数据（p1-p10）并存，导致部分低库存/临期商品重复显示。MVP 阶段可忽略；清理时跑 `pnpm db:reset` 即可
+
+---
+
+## Task 11 · UI 视觉重塑
+
+**目标**:把散落的 zinc 默认主题升级为「账本笔记本 × 现代精度」暖色产品视觉,
+顺手补齐 active 导航、暗色切换、共享组件、loading/error 边界、产品下架入口。
+
+### 11.1 设计系统
+
+```bash
+curl -s http://localhost:3000/products | grep -oE 'bg-canvas|bg-surface|text-ink|font-serif' | sort -u
+```
+
+| # | 用例 | 期望 | 实际 |
+|---|---|---|---|
+| 11.1.1 | Tailwind v4 `@theme` token 已生成 | `bg-canvas`/`bg-surface`/`text-ink`/`font-serif` 等语义类可解析 | ✅ |
+| 11.1.2 | 字体栈 | Noto Serif SC / Geist Sans / Geist Mono + 中文系统 fallback | ✅ |
+| 11.1.3 | 删除旧 `body { font-family: Arial }` 强制 | Geist + 中文 fallback 生效 | ✅ |
+| 11.1.4 | 暗色 class strategy | `<html class="dark">` 触发的 `.dark` selector,`@custom-variant dark (&:where(.dark, .dark *))` | ✅ |
+
+### 11.2 共享 UI 组件
+
+`src/components/ui/` 下 8 个组件被多页面复用:
+
+- `PageHeader`:标题 + 描述 + 返回 + actions 槽
+- `StatCard`:KPI 卡(展示型)
+- `SectionCard`:带头部 + body + footer 的卡片容器
+- `EmptyState`:统一空状态(替换原 3 套不同写法)
+- `Pill`:多 tone / variant 的徽章
+- `Field`:`FieldSection` / `FieldGrid` / `Field` / `inputClass` 提升自 `ProductForm`
+- `ThemeToggle`:暗色切换,`useSyncExternalStore` 跟随 `<html>` class
+- `DeleteProductButton`:产品下架(展开式二次确认)
+
+### 11.3 Active 导航态
+
+```bash
+curl -s http://localhost:3000/products | grep -oE 'bg-accent-bg' | wc -l
+curl -s http://localhost:3000/products | grep -oE 'aria-current="page"'
+```
+
+| # | 用例 | 期望 | 实际 |
+|---|---|---|---|
+| 11.3.1 | `/dashboard` | sidebar 高亮「经营看板」 | ✅ |
+| 11.3.2 | `/products` | sidebar 高亮「商品管理」(`bg-accent-bg` + `aria-current="page"`) | ✅ |
+| 11.3.3 | `/sales` | sidebar 高亮「销售记录」 | ✅ |
+| 11.3.4 | `/sales/{id}` | 「销售记录」依然高亮(子路径匹配) | ✅ |
+| 11.3.5 | 移动抽屉同步 active | mobile drawer 中当前页同样有视觉指示 | 浏览器验证 |
+| 11.3.6 | 高亮视觉:左 3px terracotta 竖条 + 淡背景 | ✅ 设计落地 | 浏览器验证 |
+
+### 11.4 暗色模式
+
+| # | 用例 | 期望 | 实际 |
+|---|---|---|---|
+| 11.4.1 | 首次访问 | 默认浅色(`prefers-color-scheme` 决定) | ✅ |
+| 11.4.2 | `<head>` 内联脚本提前读 localStorage | 不闪屏(FOUC 抑制) | ✅ |
+| 11.4.3 | ThemeToggle 点击翻转 | 写 localStorage('theme') + 加/删 `<html>.dark` | 浏览器验证 |
+| 11.4.4 | 刷新页面 | 偏好像 cookie 一样保留(localStorage) | 浏览器验证 |
+| 11.4.5 | 暗色下调色 | bg-canvas #13110D / surface #1C1812 / accent #E07548 / ink #F1E9D9 | ✅ |
+
+### 11.5 loading / error 边界
+
+为以下路由段添加了 `loading.tsx` + `error.tsx`:
+
+- `/dashboard`
+- `/products`、`/products/new`、`/products/[id]/edit`
+- `/sales`、`/sales/new`、`/sales/[id]`
+
+| # | 用例 | 期望 | 实际 |
+|---|---|---|---|
+| 11.5.1 | 路由级 `loading` fallback | 渲染统一 `LoadingView` 居中占位 | ✅ |
+| 11.5.2 | 路由级 `error` 边界 | 渲染 `RouteError` 带错误信息 + 重试 + 回首页 | ✅ |
+| 11.5.3 | 5 段 page 都通过烟雾测 | `/products` `/sales` `/dashboard` 等返回 200 | ✅ |
+
+### 11.6 产品下架入口
+
+API 支持 `DELETE /api/products/[id]`,UI 此前无入口,UI 现在在 `/products/[id]/edit` 底部暴露「危险操作」区:
+
+| # | 用例 | 期望 | 实际 |
+|---|---|---|---|
+| 11.6.1 | 点击「删除商品」 | 展开内嵌确认区(说明有销售历史时会拒绝) | 浏览器验证 |
+| 11.6.2 | 确认删除 | `DELETE /api/products/[id]` → 204,跳回 `/products` + toast | 浏览器验证 |
+| 11.6.3 | 有销售历史时拒绝 | API 返回 409 + `PRODUCT_HAS_HISTORY`,UI 用 toast 兜底 | 浏览器验证 |
+
+### 11.7 视觉签名元素
+
+| # | 用例 | 期望 | 实际 |
+|---|---|---|---|
+| 11.7.1 | 货币排版 | KPI 金额 / 表格销售总额 / POS 购物车金额都用 `font-serif tnum` | ✅ |
+| 11.7.2 | Sidebar 日期戳 | 「今天 · YYYY/MM/DD」斜体衬线小字 | ✅ |
+| 11.7.3 | 卡片阴影 | `0 1px 2px + 0 1px 3px` 浅投,暗色加深 | ✅ |
+
+### 11.8 烟测回归
+
+`scripts/smoke.sh` 全 30 个用例在视觉重塑后仍然通过。
+
+| 类别 | 用例数 | 期望 | 实际 |
+|---|---|---|---|
+| Product API | 12 | 全部保持原行为 | ✅ |
+| Sale API | 9 | 全部保持原行为 | ✅ |
+| Pages | 8 | 全部保持返回 200 | ✅ |
+| Cleanup | 1 | DELETE smoke product 仍 204 | ✅ |
 
 ---
 

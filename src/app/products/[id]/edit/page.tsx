@@ -1,14 +1,19 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ChevronLeft } from "lucide-react";
 import { prisma } from "@/lib/prisma";
-import { ProductForm, type ProductFormValues } from "@/components/product-form";
+import {
+  ProductForm,
+  type ProductFormValues,
+} from "@/components/product-form";
+import { PageHeader } from "@/components/ui/page-header";
+import { DeleteProductButton } from "@/components/ui/delete-product-button";
 
 type Params = Promise<{ id: string }>;
 
 // 服务端把 Prisma 模型转成表单可用的字符串值。
 // 字符串价格避免 JSON 序列化 Decimal 时的精度/类型问题。
-function toFormValues(p: NonNullable<Awaited<ReturnType<typeof prisma.product.findUnique>>>): ProductFormValues {
+function toFormValues(
+  p: NonNullable<Awaited<ReturnType<typeof prisma.product.findUnique>>>,
+): ProductFormValues {
   return {
     barcode: p.barcode ?? "",
     name: p.name,
@@ -26,7 +31,11 @@ function toFormValues(p: NonNullable<Awaited<ReturnType<typeof prisma.product.fi
   };
 }
 
-export default async function EditProductPage({ params }: { params: Params }) {
+export default async function EditProductPage({
+  params,
+}: {
+  params: Params;
+}) {
   const { id } = await params;
 
   const [product, categories] = await Promise.all([
@@ -41,22 +50,13 @@ export default async function EditProductPage({ params }: { params: Params }) {
   if (!product) notFound();
 
   return (
-    <div className="mx-auto max-w-3xl p-6 space-y-6">
-      <div>
-        <Link
-          href="/products"
-          className="inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
-        >
-          <ChevronLeft className="h-4 w-4" />
-          返回商品列表
-        </Link>
-        <h1 className="mt-2 text-2xl font-semibold tracking-tight">
-          编辑商品
-        </h1>
-        <p className="mt-1 text-sm text-zinc-500">
-          修改库存会写入一条调整流水，方便追溯库存变化原因。
-        </p>
-      </div>
+    <div className="mx-auto max-w-3xl space-y-8 px-6 py-8">
+      <PageHeader
+        title="编辑商品"
+        description="修改库存会写入一条调整流水,方便追溯库存变化原因。"
+        backHref="/products"
+        backLabel="返回商品列表"
+      />
 
       <ProductForm
         mode="edit"
@@ -64,6 +64,16 @@ export default async function EditProductPage({ params }: { params: Params }) {
         initial={toFormValues(product)}
         categoryOptions={categories.map((c) => c.category)}
       />
+
+      <section className="space-y-3">
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-ink-3">
+          危险操作
+        </h2>
+        <DeleteProductButton
+          productId={product.id}
+          productName={product.name}
+        />
+      </section>
     </div>
   );
 }

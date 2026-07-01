@@ -1,7 +1,6 @@
-import Link from "next/link";
-import { ChevronLeft } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { ProductForm } from "@/components/product-form";
+import { PageHeader } from "@/components/ui/page-header";
 
 export default async function NewProductPage() {
   const categories = await prisma.product.findMany({
@@ -11,22 +10,13 @@ export default async function NewProductPage() {
   });
 
   return (
-    <div className="mx-auto max-w-3xl p-6 space-y-6">
-      <div>
-        <Link
-          href="/products"
-          className="inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
-        >
-          <ChevronLeft className="h-4 w-4" />
-          返回商品列表
-        </Link>
-        <h1 className="mt-2 text-2xl font-semibold tracking-tight">
-          新建商品
-        </h1>
-        <p className="mt-1 text-sm text-zinc-500">
-          填写商品信息后保存。如果初始库存大于 0，会自动写入一条入库流水。
-        </p>
-      </div>
+    <div className="mx-auto max-w-3xl space-y-8 px-6 py-8">
+      <PageHeader
+        title="新建商品"
+        description="填写商品信息后保存。如果初始库存大于 0,会自动写入一条入库流水。"
+        backHref="/products"
+        backLabel="返回商品列表"
+      />
 
       <ProductForm
         mode="create"

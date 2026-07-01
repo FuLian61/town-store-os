@@ -5,6 +5,12 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
 import { Loader2, Save, X } from "lucide-react";
+import {
+  FieldSection,
+  FieldGrid,
+  Field,
+  inputClass,
+} from "./ui/field";
 
 // 与服务端 Product 类型字段对齐；编辑模式下 prefill，初次创建全部为空。
 type ProductFormValues = {
@@ -91,11 +97,11 @@ export function ProductForm({
     value: ProductFormValues[K],
   ) {
     setValues((v) => ({ ...v, [key]: value }));
-    // 字段修改后清掉它的错误
     setErrors((e) => {
       if (!e[key]) return e;
-      const { [key]: _, ...rest } = e;
-      return rest;
+      const next = { ...e };
+      delete next[key];
+      return next;
     });
   }
 
@@ -153,14 +159,17 @@ export function ProductForm({
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-8">
+    <form onSubmit={onSubmit} className="space-y-6">
       {topError && (
-        <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
+        <div className="rounded-lg border border-danger/40 bg-danger-bg/50 px-4 py-3 text-sm text-danger">
           {topError}
         </div>
       )}
 
-      <Section title="基本信息" description="商品的基础身份信息">
+      <FieldSection
+        title="基本信息"
+        description="商品的基础身份信息"
+      >
         <FieldGrid>
           <Field label="商品名" required error={errors.name?.[0]}>
             <input
@@ -204,7 +213,7 @@ export function ProductForm({
               className={inputClass(!!errors.brand)}
             />
           </Field>
-          <Field label="规格" error={errors.spec?.[0]}>
+          <Field label="规格" error={errors.spec?.[0]} className="sm:col-span-2">
             <input
               type="text"
               value={values.spec}
@@ -214,9 +223,12 @@ export function ProductForm({
             />
           </Field>
         </FieldGrid>
-      </Section>
+      </FieldSection>
 
-      <Section title="价格与库存" description="价格、当前库存和提醒阈值">
+      <FieldSection
+        title="价格与库存"
+        description="价格、当前库存和提醒阈值"
+      >
         <FieldGrid>
           <Field label="进价 (¥)" required error={errors.costPrice?.[0]}>
             <input
@@ -275,9 +287,9 @@ export function ProductForm({
             />
           </Field>
         </FieldGrid>
-      </Section>
+      </FieldSection>
 
-      <Section title="位置与效期" description="货架位置和到期日期（可选）">
+      <FieldSection title="位置与效期" description="货架位置和到期日期（可选）">
         <FieldGrid>
           <Field label="货架位置" error={errors.shelfLocation?.[0]}>
             <input
@@ -297,12 +309,12 @@ export function ProductForm({
             />
           </Field>
         </FieldGrid>
-      </Section>
+      </FieldSection>
 
-      <div className="flex items-center justify-end gap-3 border-t border-zinc-200 pt-6 dark:border-zinc-800">
+      <div className="flex items-center justify-end gap-3 rounded-lg border border-line bg-surface px-5 py-4">
         <Link
           href="/products"
-          className="inline-flex items-center gap-1.5 rounded-md border border-zinc-200 bg-white px-4 py-2 text-sm font-medium hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:bg-zinc-900"
+          className="inline-flex items-center gap-1.5 rounded-md border border-line-strong bg-surface px-4 py-2 text-sm font-medium transition-colors hover:bg-surface-2"
         >
           <X className="h-4 w-4" />
           取消
@@ -310,7 +322,7 @@ export function ProductForm({
         <button
           type="submit"
           disabled={isPending}
-          className="inline-flex items-center gap-1.5 rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
+          className="inline-flex items-center gap-1.5 rounded-md bg-accent px-4 py-2 text-sm font-medium text-surface transition-colors hover:bg-accent-hover disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-accent/40"
         >
           {isPending ? (
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -322,83 +334,6 @@ export function ProductForm({
       </div>
     </form>
   );
-}
-
-// === 小工具组件 ===
-
-function Section({
-  title,
-  description,
-  children,
-}: {
-  title: string;
-  description?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="space-y-4">
-      <div>
-        <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
-          {title}
-        </h2>
-        {description && (
-          <p className="mt-1 text-sm text-zinc-500">{description}</p>
-        )}
-      </div>
-      {children}
-    </section>
-  );
-}
-
-function FieldGrid({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">{children}</div>
-  );
-}
-
-function Field({
-  label,
-  required,
-  hint,
-  error,
-  children,
-}: {
-  label: string;
-  required?: boolean;
-  hint?: string;
-  error?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <label className="block space-y-1.5">
-      <div className="flex items-baseline justify-between">
-        <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-          {label}
-          {required && (
-            <span className="ml-0.5 text-red-500" aria-label="必填">
-              *
-            </span>
-          )}
-        </span>
-        {hint && <span className="text-xs text-zinc-400">{hint}</span>}
-      </div>
-      {children}
-      {error && (
-        <p className="text-xs text-red-600 dark:text-red-400">{error}</p>
-      )}
-    </label>
-  );
-}
-
-function inputClass(hasError: boolean): string {
-  return [
-    "w-full rounded-md border bg-white px-3 py-2 text-sm shadow-sm",
-    "placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-900/10",
-    "dark:bg-zinc-950 dark:focus:ring-zinc-50/20",
-    hasError
-      ? "border-red-400 dark:border-red-700"
-      : "border-zinc-200 dark:border-zinc-800",
-  ].join(" ");
 }
 
 export type { ProductFormValues };

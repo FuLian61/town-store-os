@@ -3,6 +3,11 @@ import { ChevronRight, Plus } from "lucide-react";
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { formatDateTime, formatPrice } from "@/lib/format";
+import { PageHeader } from "@/components/ui/page-header";
+import { SectionCard } from "@/components/ui/section-card";
+import { StatCard } from "@/components/ui/stat-card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Receipt } from "lucide-react";
 
 type SearchParams = Promise<{
   from?: string;
@@ -67,58 +72,57 @@ export default async function SalesPage({
   );
   const margin =
     totalAmount > 0 ? (totalProfit / totalAmount) * 100 : 0;
+  const hasFilter = Boolean(from) || Boolean(to);
 
   return (
-    <div className="mx-auto max-w-6xl p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">销售记录</h1>
-          <p className="text-sm text-zinc-500 mt-1">共 {sales.length} 条</p>
-        </div>
-        <Link
-          href="/sales/new"
-          className="inline-flex items-center gap-1.5 rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
-        >
-          <Plus className="h-4 w-4" />
-          新建销售
-        </Link>
-      </div>
+    <div className="mx-auto max-w-6xl space-y-6 px-6 py-8">
+      <PageHeader
+        title="销售记录"
+        description={`共 ${sales.length} 条`}
+        actions={
+          <Link
+            href="/sales/new"
+            className="inline-flex items-center gap-1.5 rounded-md bg-accent px-4 py-2 text-sm font-medium text-surface transition-colors hover:bg-accent-hover focus:outline-none focus:ring-2 focus:ring-accent/40"
+          >
+            <Plus className="h-4 w-4" />
+            新建销售
+          </Link>
+        }
+      />
 
       <form
         action="/sales"
         method="GET"
-        className="flex flex-wrap items-end gap-3"
+        className="flex flex-wrap items-end gap-3 rounded-lg border border-line bg-surface p-4"
       >
         <label className="block space-y-1.5">
-          <span className="text-xs text-zinc-500">开始日期</span>
+          <span className="text-xs font-medium text-ink-2">开始日期</span>
           <input
             type="date"
             name="from"
-            defaultValue={
-              from ? from.toISOString().slice(0, 10) : ""
-            }
-            className="rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-800 dark:bg-zinc-950"
+            defaultValue={from ? from.toISOString().slice(0, 10) : ""}
+            className="rounded-md border border-line-strong bg-surface px-3 py-2 text-sm text-ink focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
           />
         </label>
         <label className="block space-y-1.5">
-          <span className="text-xs text-zinc-500">结束日期</span>
+          <span className="text-xs font-medium text-ink-2">结束日期</span>
           <input
             type="date"
             name="to"
             defaultValue={to ? to.toISOString().slice(0, 10) : ""}
-            className="rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-800 dark:bg-zinc-950"
+            className="rounded-md border border-line-strong bg-surface px-3 py-2 text-sm text-ink focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
           />
         </label>
         <button
           type="submit"
-          className="rounded-md border border-zinc-200 bg-white px-4 py-2 text-sm font-medium hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:bg-zinc-900"
+          className="rounded-md bg-ink px-4 py-2 text-sm font-medium text-surface transition-colors hover:bg-ink-2 focus:outline-none focus:ring-2 focus:ring-ink/30"
         >
           筛选
         </button>
-        {(from || to) && (
+        {hasFilter && (
           <Link
             href="/sales"
-            className="rounded-md px-3 py-2 text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
+            className="rounded-md border border-line-strong bg-surface px-3 py-2 text-sm transition-colors hover:bg-surface-2"
           >
             清空
           </Link>
@@ -126,38 +130,63 @@ export default async function SalesPage({
       </form>
 
       {sales.length > 0 && (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Stat label="销售总额" value={formatPrice(totalAmount)} />
-          <Stat label="总毛利" value={formatPrice(totalProfit)} />
-          <Stat label="平均毛利率" value={`${margin.toFixed(1)}%`} />
-          <Stat
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+          <StatCard label="销售总额" value={formatPrice(totalAmount)} />
+          <StatCard
+            label="总毛利"
+            value={formatPrice(totalProfit)}
+            accent={totalProfit >= 0 ? "positive" : "danger"}
+          />
+          <StatCard label="平均毛利率" value={`${margin.toFixed(1)}%`} />
+          <StatCard
             label="单数"
             value={String(sales.length)}
-            muted
+            accent="muted"
           />
         </div>
       )}
 
       {sales.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-zinc-200 p-12 text-center text-sm text-zinc-500 dark:border-zinc-800">
-          {from || to ? "所选时间段没有销售记录" : "还没有销售，点击右上角开始第一笔销售"}
-        </div>
+        <EmptyState
+          icon={<Receipt className="h-8 w-8" />}
+          title={
+            hasFilter
+              ? "所选时间段没有销售记录"
+              : "还没有销售记录"
+          }
+          hint={
+            hasFilter
+              ? "试着放宽日期范围。"
+              : "点击右上角「新建销售」开始第一笔。"
+          }
+          action={
+            hasFilter ? undefined : (
+              <Link
+                href="/sales/new"
+                className="inline-flex items-center gap-1.5 rounded-md bg-accent px-4 py-2 text-sm font-medium text-surface transition-colors hover:bg-accent-hover"
+              >
+                <Plus className="h-4 w-4" />
+                新建销售
+              </Link>
+            )
+          }
+        />
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-800">
-          <table className="w-full text-sm">
-            <thead className="bg-zinc-50 text-left text-xs uppercase tracking-wider text-zinc-500 dark:bg-zinc-900">
+        <SectionCard bodyClassName="overflow-x-auto">
+          <table className="min-w-full divide-y divide-line text-sm">
+            <thead className="bg-surface-2/50 text-xs uppercase tracking-wider text-ink-3">
               <tr>
-                <th className="px-4 py-3 font-medium">销售时间</th>
-                <th className="px-4 py-3 font-medium">商品</th>
-                <th className="px-4 py-3 font-medium text-right">件数</th>
-                <th className="px-4 py-3 font-medium text-right">销售总额</th>
-                <th className="px-4 py-3 font-medium text-right">毛利</th>
-                <th className="px-4 py-3 font-medium text-right">毛利率</th>
-                <th className="px-4 py-3 font-medium">备注</th>
-                <th className="px-4 py-3 font-medium w-8"></th>
+                <th className="px-5 py-3 text-left font-medium">销售时间</th>
+                <th className="px-5 py-3 text-left font-medium">商品</th>
+                <th className="px-5 py-3 text-right font-medium">件数</th>
+                <th className="px-5 py-3 text-right font-medium">销售总额</th>
+                <th className="px-5 py-3 text-right font-medium">毛利</th>
+                <th className="px-5 py-3 text-right font-medium">毛利率</th>
+                <th className="px-5 py-3 text-left font-medium">备注</th>
+                <th className="px-5 py-3 text-right font-medium" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
+            <tbody className="divide-y divide-line">
               {sales.map((s) => {
                 const sa = Number(s.totalAmount.toString());
                 const sp = Number(s.totalProfit.toString());
@@ -165,48 +194,45 @@ export default async function SalesPage({
                 return (
                   <tr
                     key={s.id}
-                    className="bg-white hover:bg-zinc-50 dark:bg-zinc-950 dark:hover:bg-zinc-900"
+                    className="transition-colors hover:bg-surface-2"
                   >
-                    <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400 tabular-nums">
+                    <td className="px-5 py-3 text-ink-2 tnum">
                       {formatDateTime(s.soldAt)}
                     </td>
-                    <td className="px-4 py-3">
-                      <div className="text-zinc-900 dark:text-zinc-100">
+                    <td className="px-5 py-3">
+                      <div className="text-ink">
                         {s.items[0]?.product.name ?? "(空)"}
                         {s.items.length > 1 && (
-                          <span className="text-zinc-500">
-                            {" "}等 {s.items.length} 项
+                          <span className="text-ink-3">
+                            {" "}
+                            等 {s.items.length} 项
                           </span>
                         )}
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-right tabular-nums">
+                    <td className="px-5 py-3 text-right text-ink-2 tnum">
                       {s.itemCount}
                     </td>
-                    <td className="px-4 py-3 text-right font-medium tabular-nums">
+                    <td className="px-5 py-3 text-right font-serif font-semibold text-ink tnum">
                       {formatPrice(s.totalAmount)}
                     </td>
-                    <td className="px-4 py-3 text-right tabular-nums">
-                      <span
-                        className={
-                          sp >= 0
-                            ? "text-emerald-600 dark:text-emerald-400"
-                            : "text-red-600"
-                        }
-                      >
-                        {formatPrice(s.totalProfit)}
-                      </span>
+                    <td
+                      className={`px-5 py-3 text-right tnum ${
+                        sp >= 0 ? "text-positive" : "text-danger"
+                      }`}
+                    >
+                      {formatPrice(s.totalProfit)}
                     </td>
-                    <td className="px-4 py-3 text-right tabular-nums text-zinc-600 dark:text-zinc-400">
+                    <td className="px-5 py-3 text-right text-ink-3 tnum">
                       {sm.toFixed(1)}%
                     </td>
-                    <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400 max-w-[200px] truncate">
-                      {s.note ?? "-"}
+                    <td className="max-w-[200px] truncate px-5 py-3 text-ink-2">
+                      {s.note ?? "—"}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-5 py-3 text-right">
                       <Link
                         href={`/sales/${s.id}`}
-                        className="inline-flex items-center text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
+                        className="inline-flex items-center rounded-md p-1 text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink"
                         aria-label="查看详情"
                       >
                         <ChevronRight className="h-4 w-4" />
@@ -217,29 +243,8 @@ export default async function SalesPage({
               })}
             </tbody>
           </table>
-        </div>
+        </SectionCard>
       )}
-    </div>
-  );
-}
-
-function Stat({
-  label,
-  value,
-  muted,
-}: {
-  label: string;
-  value: string;
-  muted?: boolean;
-}) {
-  return (
-    <div className="rounded-lg border border-zinc-200 bg-white px-4 py-3 dark:border-zinc-800 dark:bg-zinc-950">
-      <div className="text-xs text-zinc-500">{label}</div>
-      <div
-        className={`mt-1 text-lg font-semibold tabular-nums ${muted ? "text-zinc-500" : ""}`}
-      >
-        {value}
-      </div>
     </div>
   );
 }

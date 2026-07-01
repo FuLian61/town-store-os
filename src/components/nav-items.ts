@@ -1,6 +1,7 @@
 import {
   LayoutDashboard,
   Package,
+  ScanLine,
   ShoppingCart,
   Plus,
 } from "lucide-react";
@@ -18,6 +19,12 @@ export const NAV_ITEMS: readonly NavItem[] = [
     label: "经营看板",
     description: "今日销售与提醒",
     icon: LayoutDashboard,
+  },
+  {
+    href: "/lookup",
+    label: "快速查价",
+    description: "按名称 / 条码搜索",
+    icon: ScanLine,
   },
   {
     href: "/products",

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Pencil, Plus, Search } from "lucide-react";
-import { Prisma } from "@prisma/client";
+import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { daysUntil, formatDate, formatPrice } from "@/lib/format";
 

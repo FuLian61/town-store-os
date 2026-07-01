@@ -12,9 +12,15 @@
  * 5. 不依赖外部数据，可离线运行
  */
 
-import { PrismaClient } from "@prisma/client";
+import "dotenv/config";
+import { PrismaClient } from "../src/generated/prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
 
-const prisma = new PrismaClient();
+const adapter = new PrismaPg({
+  connectionString: process.env.DATABASE_URL!,
+});
+
+const prisma = new PrismaClient({ adapter });
 
 // 演示商品：每项含条码（用于幂等 upsert）+ 全部展示字段
 type Seed = {

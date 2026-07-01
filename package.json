@@ -13,13 +13,12 @@
     "prisma:format": "prisma format",
     "db:seed": "tsx prisma/seed.ts",
     "db:reset": "prisma migrate reset --force",
+    "postinstall": "prisma generate",
     "smoke": "./scripts/smoke.sh"
   },
-  "prisma": {
-    "seed": "tsx prisma/seed.ts"
-  },
   "dependencies": {
-    "@prisma/client": "^6.0.0",
+    "@prisma/adapter-pg": "^7.8.0",
+    "@prisma/client": "^7.8.0",
     "date-fns": "^4.1.0",
     "lucide-react": "^0.460.0",
     "next": "16.2.9",
@@ -35,7 +34,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
-    "prisma": "^6.0.0",
+    "prisma": "^7.8.0",
     "tailwindcss": "^4",
     "tsx": "^4.19.2",
     "typescript": "^5"

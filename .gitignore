@@ -44,3 +44,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# prisma generated client (Prisma 7 用 prisma-client 生成器，输出到 src/generated/prisma/)
+/src/generated/

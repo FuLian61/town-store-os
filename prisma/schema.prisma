@@ -2,12 +2,12 @@
 // 详细字段说明见 /Users/fulian/code/town-store-os/docs/data-model.md
 
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 // ============ 第一阶段核心表 ============

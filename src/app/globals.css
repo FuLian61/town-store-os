@@ -1,26 +1,121 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* Tailwind v4 class-based dark mode — controlled by <html class="dark"> */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  /* === Surfaces === */
+  --color-canvas: #f7f2e7;
+  --color-surface: #fffcf6;
+  --color-surface-2: #efe7d5;
+
+  /* === Ink (text colors) === */
+  --color-ink: #1f1810;
+  --color-ink-2: #5c5043;
+  --color-ink-3: #8a7e6d;
+
+  /* === Lines === */
+  --color-line: #e8dfd0;
+  --color-line-strong: #d6c9b0;
+
+  /* === Semantic === */
+  --color-accent: #b8410e;
+  --color-accent-bg: #f4d9c7;
+  --color-accent-hover: #9c360c;
+  --color-positive: #2f6f4e;
+  --color-positive-bg: #d8e8de;
+  --color-warning: #a66b14;
+  --color-warning-bg: #f4e2c2;
+  --color-danger: #962e22;
+  --color-danger-bg: #f4d4d0;
+
+  /* === Fonts ===
+     - font-sans uses Geist next/font + Chinese fallbacks
+     - font-serif is a system stack (Songti SC on macOS, SimSun on Windows)
+     - font-mono uses Geist Mono
+  */
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui,
+    "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+  --font-serif: ui-serif, Georgia, "Songti SC", "STSongti SC", "SimSun",
+    "宋体", serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, "SF Mono", Menlo,
+    monospace;
+
+  /* === Radii === */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+
+  /* === Shadows === */
+  --shadow-card: 0 1px 2px rgba(31, 24, 16, 0.04),
+    0 1px 3px rgba(31, 24, 16, 0.06);
+  --shadow-pop: 0 8px 24px -8px rgba(31, 24, 16, 0.18),
+    0 2px 6px -2px rgba(31, 24, 16, 0.08);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* === Dark mode overrides === */
+.dark {
+  --color-canvas: #13110d;
+  --color-surface: #1c1812;
+  --color-surface-2: #231d15;
+  --color-ink: #f1e9d9;
+  --color-ink-2: #b0a38c;
+  --color-ink-3: #7a6e5a;
+  --color-line: #2e2620;
+  --color-line-strong: #463b2d;
+  --color-accent: #e07548;
+  --color-accent-bg: #3a1f12;
+  --color-accent-hover: #f0875c;
+  --color-positive: #5baa82;
+  --color-positive-bg: #1f3027;
+  --color-warning: #d08a2e;
+  --color-warning-bg: #3a2814;
+  --color-danger: #d8605a;
+  --color-danger-bg: #3a1c18;
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-pop: 0 8px 24px -8px rgba(0, 0, 0, 0.6),
+    0 2px 6px -2px rgba(0, 0, 0, 0.4);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* === Base === */
+html {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--color-canvas);
+  color: var(--color-ink);
+}
+
+/* Tabular numerals for prices, stock counts, sale totals */
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Subtle thin scrollbar (webkit) */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: var(--color-line-strong);
+  border-radius: 999px;
+}
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

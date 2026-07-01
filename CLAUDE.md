@@ -22,12 +22,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `pnpm db:seed` | 灌 30 件 demo 商品的种子数据(幂等) |
 | `pnpm db:reset` | **破坏性** 清库 + 重灌 |
 | `pnpm smoke` | 跑 `scripts/smoke.sh` 的 30 个端到端用例,需要 dev 或 start 在跑 |
+| `pnpm test:e2e` | Playwright 真浏览器 E2E(默认 webServer 模式自动启 `pnpm db:seed && pnpm start`);`BASE_URL=...` 复用外部 server |
+| `pnpm test:e2e:headed` | Playwright 跑时显示浏览器窗口 |
+| `pnpm test:e2e:ui` | Playwright 自带 UI 调试 |
 
 `postinstall` 自动跑 `prisma generate`,本地 `pnpm install` 后即可工作。
 
 **PostgreSQL** 起在 `docker-compose-environment.yml`(端口 5432,服务名 `town-store-postgres`,db 名 `town_store`)。CI 用 `postgres:16-alpine` service 容器,环境变量固定 `postgres/postgres`。
 
-**烟测 + CI**:`scripts/smoke.sh` 是 bash + curl + python3 json 解析。CI 见 `.github/workflows/ci.yml`,顺序:install → tsc → lint → migrate → generate → seed → build → start → smoke。server-ready 探活最多 60s。
+**烟测 + CI**:`scripts/smoke.sh` 是 bash + curl + python3 json 解析,走 HTTP 状态码 + JSON 形状断言。Playwright 真浏览器 E2E 在 `tests/e2e/`,断言 class / aria / 文案 / 交互,32+ 用例。CI 见 `.github/workflows/ci.yml`,目前只跑 smoke(后续 Task 12.3 加进来)。server-ready 探活最多 60s。
+
+**Playwright 用法**:`pnpm exec playwright install chromium chromium-headless-shell`(首次)。Playwright 配置默认自带 webServer 拉起生产构建,跑完即销毁;调试时可传 `BASE_URL=http://localhost:3000` 复用现有 dev。
 
 ## 架构要点
 
@@ -81,7 +86,7 @@ Client 端解析约定:`body.error.message`(顶层 banner)+ `body.error.fields` 
 
 **新增页面/字段时必须走这套组件**,不要复制粘贴 section 或 KPI 卡的 Tailwind 字符串;色板变化也只改 `globals.css` 的 `@theme` token。
 
-Shell(侧栏 + 移动抽屉)active 态来自 `usePathname()` + `components/nav-items.ts` 共享的 `NAV_ITEMS`。新增顶级导航项请同时改 `nav-items.ts`,**sidebar 和 mobile-nav 自动同步。**
+Shell(侧栏 + 移动抽屉)active 态来自 `usePathname()` + `components/nav-items.ts` 共享的 `NAV_ITEMS`(看板 / 快速查价 / 商品管理 / 销售记录)。新增顶级导航项请同时改 `nav-items.ts` 一处,**sidebar 和 mobile-nav 自动同步。**
 
 ### 6. 暗色模式
 
@@ -122,7 +127,8 @@ export default function Error(p: { error: Error & { digest?: string }; reset: ()
 ## 相关文档
 
 - [README.md](README.md) — 产品定位 + 本地开发 + 后续阶段路线
-- [docs/testing.md](docs/testing.md) — Task 1–11 烟测矩阵 + CI 流程
+- [docs/testing.md](docs/testing.md) — Task 1–12 烟测矩阵 + CI 流程
 - [docs/data-model.md](docs/data-model.md) — `Product` / `Sale` / `SaleItem` / `StockMovement` 字段与约束(改 Prisma schema 前后读一下)
 - [docs/product-plan.md](docs/product-plan.md) — 业务流程说明
 - [.github/workflows/ci.yml](.github/workflows/ci.yml) — CI 流程
+- [tests/e2e/](tests/e2e/) — Playwright 真实浏览器测试(visual + api,33 用例)

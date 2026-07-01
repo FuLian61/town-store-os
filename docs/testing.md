@@ -235,8 +235,9 @@ curl -s http://localhost:3000/api/sales
 - [x] Task 9（全局导航 + 首页）—— 见上
 - [x] Task 10（seed 脚本）—— 见上
 - [x] Task 11（UI 视觉重塑 + 共享组件 + active 导航 + 暗色切换 + 下架入口）—— 见上
+- [x] Task 12（快速查价页 + Playwright E2E）—— 见上
 - [x] CI（GitHub Actions + smoke.sh）—— 见下
-- [ ] 浏览器端验证（UI 截图）—— 验收阶段补
+- [ ] 浏览器端 UI 截图留档 —— 用 Playwright `page.screenshot()` 加 12.3 测试中即可,验收阶段补
 - [ ] 集成测试 / 单元测试 —— MVP 验收后补
 - [ ] 性能 / 压测 —— 留到第二阶段
 
@@ -387,6 +388,81 @@ API 支持 `DELETE /api/products/[id]`,UI 此前无入口,UI 现在在 `/product
 | Sale API | 9 | 全部保持原行为 | ✅ |
 | Pages | 8 | 全部保持返回 200 | ✅ |
 | Cleanup | 1 | DELETE smoke product 仍 204 | ✅ |
+
+---
+
+## Task 12 · 快速查价页 + Playwright E2E
+
+**目标**:补 MVP「快速查价」场景 + 上 Playwright 真实浏览器 E2E。
+
+### 12.1 /lookup 路由
+
+```bash
+curl -s 'http://localhost:3000/lookup?q=%E8%92%99%E7%89%9B' | grep -oE 'font-serif text-6xl'
+```
+
+| # | 用例 | 期望 | 实际 |
+|---|---|---|---|
+| 12.1.1 | `/lookup` 空 query | EmptyState + 「还没输入查询」 + 输入框 autofocus | ✅ |
+| 12.1.2 | `/lookup?q=瓜子` 单结果 | 大卡:`font-serif text-6xl` 售价 + 4 个 cell(库存/阈值/到期日/货架) | ✅ |
+| 12.1.3 | `/lookup?q=蒙牛` 多结果 | grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 卡片网格,每张卡 hover 抬升 + accent 边框 | ✅ |
+| 12.1.4 | `/lookup?q=xyzabc` 无匹配 | EmptyState + 「新建商品」 CTA | ✅ |
+| 12.1.5 | 搜索框 300ms debounce 推 URL | Playwright 测试覆盖(下面 12.3) | ✅ |
+| 12.1.6 | sidebar active 态 | 在 `/lookup` 时「快速查价」有 `aria-current="page"` + `bg-accent-bg` | ✅ |
+| 12.1.7 | 跨字段匹配 | 商品名 / 条码 / 品牌 / 分类 任一命中即返回 | 服务端 OR 查询 |
+
+### 12.2 nav-items.ts 共享
+
+```ts
+// 引入 ScanLine 图标,新增「快速查价」位于「经营看板」与「商品管理」之间
+NAV_ITEMS = [
+  { href: "/dashboard", ..., icon: LayoutDashboard },
+  { href: "/lookup", label: "快速查价", icon: ScanLine },  // 新
+  { href: "/products", ..., icon: Package },
+  { href: "/sales", ..., icon: ShoppingCart },
+]
+```
+
+新增导航项只需改 `components/nav-items.ts` 一处,Sidebar 与 MobileNav 自动同步。
+
+### 12.3 Playwright 测试覆盖
+
+`tests/e2e/visual.spec.ts` 28 用例 + `tests/e2e/api.spec.ts` 5 用例,共 **33 个真浏览器断言**。
+
+```bash
+# 需先确保 postgres 在 5432 + 已 migrate
+pnpm test:e2e          # 默认 webServer 模式自动启 pnpm start
+BASE_URL=http://localhost:4000 pnpm test:e2e   # 复用外部 server
+pnpm test:e2e:headed   # 看浏览器跑
+pnpm test:e2e:ui       # UI 调试
+```
+
+| 维度 | 用例数 | 覆盖 |
+|---|---|---|
+| Shell 路由 | 7 | 6 个主页面 + `/` 重定向,都返回 200 |
+| Sidebar active | 4 | 在 看板/查价/商品 三页验证 `aria-current="page"` + `bg-accent-bg` + 日期戳 |
+| 暗色模式 | 2 | 点击翻转 html.dark 类 + 写 localStorage + 刷新保留 |
+| 看板结构 | 1 | 4 个 KPI + 2 个 alert section 文案 |
+| 商品列表 | 2 | 表头保留 + 搜索 URL 同步 |
+| 销售列表 | 1 | 表头保留 |
+| 快速查价 | 3 | EmptyState / debounced 搜索 / 无匹配 CTA |
+| Loading 边界 | 1 | main 容器始终可访问 |
+| 表单 | 1 | 段标题保留 |
+| API | 5 | GET list / 422 VALIDATION / salePrice<costPrice 422 / 空 items 422 / 重定向 |
+
+### 12.4 Playwright 安装 + 浏览器
+
+```bash
+pnpm add -D @playwright/test
+pnpm exec playwright install chromium
+pnpm exec playwright install chromium-headless-shell  # headless 跑用
+```
+
+Chromium(完整 Chrome for Testing)+ headless shell 二进制各一份,首次安装约 350MB。
+
+### 12.5 隔离执行(webServer)
+
+`playwright.config.ts` 的 `webServer` 项默认拉起 `pnpm db:seed && pnpm start`,Playwright 进程独占,跑完销毁。指定 `BASE_URL` 时跳过 webServer,复用外部 server(适合调试)。
 
 ---
 

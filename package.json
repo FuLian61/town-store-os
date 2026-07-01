@@ -12,7 +12,8 @@
     "prisma:studio": "prisma studio",
     "prisma:format": "prisma format",
     "db:seed": "tsx prisma/seed.ts",
-    "db:reset": "prisma migrate reset --force"
+    "db:reset": "prisma migrate reset --force",
+    "smoke": "./scripts/smoke.sh"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

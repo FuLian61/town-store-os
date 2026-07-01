@@ -232,11 +232,58 @@ curl -s http://localhost:3000/api/sales
 - [x] Task 6（销售开单页）—— 见上
 - [x] Task 7（销售列表/详情页）—— 见上
 - [x] Task 8（经营看板）—— 见上
-- [x] Task 9（全局导航 + 首页）—— 见下
-- [ ] Task 10 完成后追加对应小节
+- [x] Task 9（全局导航 + 首页）—— 见上
+- [x] Task 10（seed 脚本）—— 见上
+- [x] CI（GitHub Actions + smoke.sh）—— 见下
 - [ ] 浏览器端验证（UI 截图）—— 验收阶段补
 - [ ] 集成测试 / 单元测试 —— MVP 验收后补
 - [ ] 性能 / 压测 —— 留到第二阶段
+
+---
+
+## CI · GitHub Actions + `scripts/smoke.sh`
+
+**目标**：每次 push/PR 自动跑 build + 类型检查 + lint + 30 个端到端烟测。
+
+### CI Workflow 步骤
+
+1. Checkout 代码
+2. Setup pnpm 9 + Node 22（带缓存）
+3. `pnpm install --frozen-lockfile`
+4. `pnpm tsc --noEmit`（类型检查）
+5. `pnpm lint`（ESLint）
+6. `pnpm prisma migrate deploy`（跑迁移）
+7. `pnpm prisma generate`（生成 client）
+8. `pnpm db:seed`（灌演示数据）
+9. `pnpm build`（生产构建）
+10. 后台启动 `pnpm start`
+11. 等待 server ready（最多 60s）
+12. `pnpm smoke`（跑烟测）
+13. 失败时上传 server log 作为 artifact
+
+### 本地运行
+
+```bash
+# 假设 dev/start 已运行在 3000 端口
+pnpm smoke
+
+# 或指定 URL
+BASE_URL=http://localhost:4000 ./scripts/smoke.sh
+```
+
+### 烟测覆盖（30 个用例）
+
+| 类别 | 用例数 | 覆盖 |
+|---|---|---|
+| Product API | 12 | 列表/搜索/筛选/CRUD/校验/重复 barcode |
+| Sale API | 9 | 创建/库存校验/原子性/边界 |
+| Pages | 8 | 6 个主页面 + 编辑页 + 首页重定向 |
+| Cleanup | 1 | 测试商品清理 |
+
+### 已知问题
+
+- TypeScript 5.0.2 低于 Next.js 推荐的 5.1.0，会输出 warning 但不阻断
+- seed 数据与历史测试数据（p1-p10）并存，导致部分低库存/临期商品重复显示。MVP 阶段可忽略；清理时跑 `pnpm db:reset` 即可
 
 ---
 

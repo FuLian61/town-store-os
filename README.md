@@ -121,3 +121,48 @@ AI 扩展：
 - 预留小程序端和 AI 能力，具备从内部后台演进为线上平台的扩展路径。
 - PostgreSQL 可作为经营数据分析底座，后期可结合 pgvector 扩展 AI 记忆与检索能力。
 
+## 本地开发
+
+### 前置条件
+
+- Node.js ≥ 22
+- pnpm ≥ 9
+- Docker（用于本地 PostgreSQL）
+
+### 启动步骤
+
+```bash
+# 1. 安装依赖
+pnpm install
+
+# 2. 启动 PostgreSQL
+docker compose -f docker-compose-environment.yml up -d
+
+# 3. 应用迁移 + 灌演示数据
+pnpm prisma migrate deploy
+pnpm db:seed
+
+# 4. 启动开发服务器
+pnpm dev
+# 访问 http://localhost:3000
+```
+
+### 常用脚本
+
+```bash
+pnpm dev              # 启动 dev server
+pnpm build            # 生产构建
+pnpm start            # 启动生产 server
+pnpm lint             # ESLint
+pnpm tsc --noEmit     # 类型检查
+pnpm db:seed          # 重灌演示数据（幂等）
+pnpm db:reset         # 清库 + 重灌（破坏性）
+pnpm smoke            # 跑 curl 烟测（需 dev/start 在跑）
+```
+
+### 测试与 CI
+
+- `pnpm smoke` 调用 `scripts/smoke.sh`，覆盖 30 个 API + 页面端到端用例
+- 每次 push / PR 触发 `.github/workflows/ci.yml`：build → 类型检查 → lint → migrate → seed → 启动 prod server → 烟测
+- 详细测试矩阵见 `docs/testing.md`
+

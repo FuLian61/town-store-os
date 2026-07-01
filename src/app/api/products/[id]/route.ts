@@ -43,6 +43,20 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
       const before = await tx.product.findUnique({ where: { id } });
       if (!before) throw new HttpError(404, "商品不存在", "NOT_FOUND");
 
+      // PATCH 模式下部分字段缺失，需要合并现有值后才能校验 "售价 >= 进价"
+      const mergedSalePrice =
+        patch.salePrice !== undefined ? patch.salePrice : before.salePrice;
+      const mergedCostPrice =
+        patch.costPrice !== undefined ? patch.costPrice : before.costPrice;
+      if (mergedSalePrice < mergedCostPrice) {
+        throw new HttpError(
+          422,
+          "请求参数校验失败",
+          "VALIDATION_ERROR",
+          { salePrice: ["售价应大于等于进价"] },
+        );
+      }
+
       const updated = await tx.product.update({ where: { id }, data: patch });
 
       // stock 变化时记录调整流水
@@ -69,7 +83,7 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
     return NextResponse.json({ product });
   } catch (err) {
     if (err instanceof HttpError) {
-      return apiError(err.message, err.status, err.code);
+      return apiError(err.message, err.status, err.code, err.fields);
     }
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       const status = prismaErrorStatus(err.code);
@@ -113,6 +127,7 @@ class HttpError extends Error {
     public status: number,
     message: string,
     public code: string,
+    public fields?: Record<string, string[]>,
   ) {
     super(message);
   }
